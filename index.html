@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>鼠鼠 Meme Hunt</title>
+<style>
+:root{
+  --bg:#fbf6f8; --paper:#ffffff; --ink:#1b1720; --muted:#6c6370; --line:#1b1720;
+  --pink:#f4a7c0; --pink-soft:#fde4ec;
+  --font:-apple-system,"PingFang SC","Hiragino Sans GB","Microsoft YaHei","Noto Sans SC",system-ui,sans-serif;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root{
+  --bg:#17141a; --paper:#221e26; --ink:#f3eef5; --muted:#a79fae; --line:#f3eef5;
+  --pink:#e58fae; --pink-soft:#3a2530; color-scheme:dark}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font);font-size:16px;line-height:1.6}
+.wrap{max-width:1000px;margin:0 auto;padding-block:24px 56px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:20px}
+h1{font-size:clamp(28px,7vw,40px);line-height:1.15;margin:0;font-weight:800}
+h1 span{background:var(--pink);padding:0 .25em;border-radius:8px;border:2.5px solid var(--line)}
+.lede{color:var(--muted);margin:6px 0 0}
+.hint{background:var(--pink-soft);border:2px dashed var(--line);border-radius:14px;padding:10px 14px;font-weight:600}
+.meta{font-size:13px;color:var(--muted)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,420px),1fr));gap:18px}
+.card{background:var(--paper);border:2.5px solid var(--line);border-radius:18px;padding:16px 18px;display:flex;flex-direction:column;gap:10px;min-width:0;box-shadow:4px 4px 0 var(--line)}
+.top{display:flex;gap:10px;align-items:flex-start}
+.num{font-weight:800;font-size:15px;background:var(--pink-soft);border:2px solid var(--line);border-radius:10px;padding:1px 10px;flex:none}
+h2{font-size:19px;line-height:1.35;margin:0;font-weight:800}
+.en{font-size:13px;color:var(--muted)}
+.stats{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
+.stats b{color:var(--ink)}
+.watch{display:inline-flex;align-self:flex-start;align-items:center;gap:6px;font-weight:700;font-size:16px;background:var(--ink);color:var(--bg);border-radius:12px;padding:8px 18px;text-decoration:none}
+.watch:focus-visible{outline:3px solid var(--pink);outline-offset:2px}
+.idea{background:var(--pink-soft);border-radius:12px;padding:10px 12px}
+.label{font-size:12px;font-weight:700;color:var(--muted);margin-bottom:2px}
+.empty{border:2.5px dashed var(--muted);border-radius:18px;padding:28px;text-align:center;color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>鼠鼠 <span>Meme Hunt</span></h1>
+    <p class="lede">抖音最近的热门视频，每个都配了守望先锋版本的想法。</p>
+  </header>
+  <div class="hint">看完觉得好笑的，微信回复编号就行 ✿</div>
+  <div class="meta" id="meta">加载中…</div>
+  <div class="grid" id="grid"></div>
+  <div class="empty" id="empty" hidden>这周还没有新视频</div>
+</div>
+<script>
+const fmt=n=>n>=1e8?(n/1e8).toFixed(1)+"亿":n>=1e4?(n/1e4).toFixed(1)+"万":String(n);
+function el(t,a={},...k){const e=document.createElement(t);for(const[x,v]of Object.entries(a)){if(x==="class")e.className=v;else if(x==="text")e.textContent=v;else e.setAttribute(x,v)}k.forEach(c=>c&&e.append(c));return e}
+fetch("clips.json?v="+Date.now()).then(r=>r.json()).then(d=>{
+  const g=document.getElementById("grid");
+  document.getElementById("meta").textContent="更新于 "+d.updated+" · "+d.clips.length+" 个视频";
+  if(!d.clips.length){document.getElementById("empty").hidden=false;return}
+  d.clips.forEach(c=>{
+    const s=el("div",{class:"stats"});
+    if(c.plays)s.append(el("span",{},el("b",{text:fmt(c.plays)})," 播放"));
+    if(c.likes)s.append(el("span",{},el("b",{text:fmt(c.likes)})," 点赞"));
+    if(c.published)s.append(el("span",{text:"发布 "+c.published}));
+    g.append(el("article",{class:"card"},
+      el("div",{class:"top"},el("span",{class:"num",text:"#"+c.n}),el("div",{},el("h2",{text:c.titleCn}),el("div",{class:"en",text:c.titleEn||""}))),
+      s,
+      el("a",{class:"watch",href:c.videoUrl,target:"_blank",rel:"noopener",text:"▶ 在抖音看"}),
+      el("div",{class:"idea"},el("div",{class:"label",text:"守望先锋版本"}),el("div",{text:c.idea}))
+    ));
+  });
+}).catch(()=>{document.getElementById("meta").textContent="加载失败，请刷新一下"});
+</script>
+</body>
+</html>
