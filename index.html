@@ -8,7 +8,7 @@
 :root{
   --bg:#fbf6f8; --paper:#ffffff; --ink:#1b1720; --muted:#6c6370; --line:#1b1720;
   --pink:#f4a7c0; --pink-soft:#fde4ec;
-  --font:-apple-system,"PingFang SC","Hiragino Sans GB","Microsoft YaHei","Noto Sans SC",system-ui,sans-serif;
+  --font:-apple-system,"PingFang SC","Hiragino Sans GB","Microsoft YaHei","Noto Sans SC","Segoe UI",system-ui,sans-serif;
   color-scheme:light;
 }
 @media (prefers-color-scheme:dark){:root{
@@ -16,9 +16,14 @@
   --pink:#e58fae; --pink-soft:#3a2530; color-scheme:dark}}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font);font-size:16px;line-height:1.6}
-.wrap{max-width:1000px;margin:0 auto;padding-block:24px 56px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:20px}
+.wrap{max-width:1000px;margin:0 auto;padding-block:20px 56px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:18px}
+.head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
 h1{font-size:clamp(28px,7vw,40px);line-height:1.15;margin:0;font-weight:800}
-h1 span{background:var(--pink);padding:0 .25em;border-radius:8px;border:2.5px solid var(--line)}
+h1 span{white-space:nowrap;background:var(--pink);padding:0 .25em;border-radius:8px;border:2.5px solid var(--line)}
+.lang{display:inline-flex;flex:none;border:2px solid var(--line);border-radius:999px;overflow:hidden;background:var(--paper)}
+.lang button{font:700 14px var(--font);border:0;background:transparent;color:var(--ink);padding:6px 14px;cursor:pointer}
+.lang button[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
+.lang button:focus-visible,.watch:focus-visible{outline:3px solid var(--pink);outline-offset:2px}
 .lede{color:var(--muted);margin:6px 0 0}
 .hint{background:var(--pink-soft);border:2px dashed var(--line);border-radius:14px;padding:10px 14px;font-weight:600}
 .meta{font-size:13px;color:var(--muted)}
@@ -27,47 +32,70 @@ h1 span{background:var(--pink);padding:0 .25em;border-radius:8px;border:2.5px so
 .top{display:flex;gap:10px;align-items:flex-start}
 .num{font-weight:800;font-size:15px;background:var(--pink-soft);border:2px solid var(--line);border-radius:10px;padding:1px 10px;flex:none}
 h2{font-size:19px;line-height:1.35;margin:0;font-weight:800}
-.en{font-size:13px;color:var(--muted)}
+.sub{font-size:13px;color:var(--muted)}
 .stats{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
 .stats b{color:var(--ink)}
 .watch{display:inline-flex;align-self:flex-start;align-items:center;gap:6px;font-weight:700;font-size:16px;background:var(--ink);color:var(--bg);border-radius:12px;padding:8px 18px;text-decoration:none}
-.watch:focus-visible{outline:3px solid var(--pink);outline-offset:2px}
 .idea{background:var(--pink-soft);border-radius:12px;padding:10px 12px}
 .label{font-size:12px;font-weight:700;color:var(--muted);margin-bottom:2px}
+.card p{margin:0}
 .empty{border:2.5px dashed var(--muted);border-radius:18px;padding:28px;text-align:center;color:var(--muted)}
 </style>
 </head>
 <body>
 <div class="wrap">
-  <header>
-    <h1>鼠鼠 <span>Meme Hunt</span></h1>
-    <p class="lede">抖音最近的热门视频，每个都配了守望先锋版本的想法。</p>
-  </header>
-  <div class="hint">看完觉得好笑的，微信回复编号就行 ✿</div>
-  <div class="meta" id="meta">加载中…</div>
+  <div class="head">
+    <div>
+      <h1>鼠鼠 <span>Meme Hunt</span></h1>
+      <p class="lede" data-t="lede"></p>
+    </div>
+    <div class="lang" role="group" aria-label="Language">
+      <button type="button" data-lang="zh" aria-pressed="false">中文</button>
+      <button type="button" data-lang="en" aria-pressed="false">EN</button>
+    </div>
+  </div>
+  <div class="hint" data-t="hint"></div>
+  <div class="meta" id="meta"></div>
   <div class="grid" id="grid"></div>
-  <div class="empty" id="empty" hidden>这周还没有新视频</div>
+  <div class="empty" id="empty" hidden data-t="empty"></div>
 </div>
 <script>
-const fmt=n=>n>=1e8?(n/1e8).toFixed(1)+"亿":n>=1e4?(n/1e4).toFixed(1)+"万":String(n);
+const T={
+  zh:{lede:"抖音最近的热门视频，每个都配了守望先锋版本的想法。",hint:"看完觉得好笑的，微信回复编号就行 ✿",empty:"这周还没有新视频",loading:"加载中…",fail:"加载失败，请刷新一下",updated:(d,n)=>"更新于 "+d+" · "+n+" 个视频",plays:" 播放",likes:" 点赞",posted:"发布 ",watch:"▶ 在抖音看",clip:"视频内容",idea:"守望先锋版本"},
+  en:{lede:"Trending Douyin clips from the last two weeks, each with an Overwatch parody idea.",hint:"Reply on WeChat with the numbers you think are funny ✿",empty:"No new clips this week",loading:"Loading…",fail:"Couldn't load. Please refresh.",updated:(d,n)=>"Updated "+d+" · "+n+" clips",plays:" plays",likes:" likes",posted:"Posted ",watch:"▶ Watch on Douyin",clip:"The clip",idea:"Overwatch version"}
+};
+let lang, data=null;
+try{lang=localStorage.getItem("lang")}catch(e){}
+if(lang!=="zh"&&lang!=="en")lang=(navigator.language||"").toLowerCase().startsWith("zh")?"zh":"en";
+const fmtZh=n=>n>=1e8?(n/1e8).toFixed(1)+"亿":n>=1e4?(n/1e4).toFixed(1)+"万":String(n);
+const fmtEn=n=>n>=1e6?(n/1e6).toFixed(1)+"M":n>=1e3?(n/1e3).toFixed(1)+"K":String(n);
 function el(t,a={},...k){const e=document.createElement(t);for(const[x,v]of Object.entries(a)){if(x==="class")e.className=v;else if(x==="text")e.textContent=v;else e.setAttribute(x,v)}k.forEach(c=>c&&e.append(c));return e}
-fetch("clips.json?v="+Date.now()).then(r=>r.json()).then(d=>{
-  const g=document.getElementById("grid");
-  document.getElementById("meta").textContent="更新于 "+d.updated+" · "+d.clips.length+" 个视频";
-  if(!d.clips.length){document.getElementById("empty").hidden=false;return}
-  d.clips.forEach(c=>{
+function render(){
+  const t=T[lang], zh=lang==="zh", fmt=zh?fmtZh:fmtEn;
+  document.documentElement.lang=zh?"zh-CN":"en";
+  document.querySelectorAll("[data-t]").forEach(n=>n.textContent=t[n.dataset.t]);
+  document.querySelectorAll(".lang button").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.lang===lang)));
+  const meta=document.getElementById("meta"), g=document.getElementById("grid");
+  if(data===null){meta.textContent=t.loading;return}
+  if(data===false){meta.textContent=t.fail;return}
+  meta.textContent=t.updated(data.updated,data.clips.length);
+  document.getElementById("empty").hidden=data.clips.length>0;
+  g.replaceChildren(...data.clips.map(c=>{
     const s=el("div",{class:"stats"});
-    if(c.plays)s.append(el("span",{},el("b",{text:fmt(c.plays)})," 播放"));
-    if(c.likes)s.append(el("span",{},el("b",{text:fmt(c.likes)})," 点赞"));
-    if(c.published)s.append(el("span",{text:"发布 "+c.published}));
-    g.append(el("article",{class:"card"},
-      el("div",{class:"top"},el("span",{class:"num",text:"#"+c.n}),el("div",{},el("h2",{text:c.titleCn}),el("div",{class:"en",text:c.titleEn||""}))),
+    if(c.plays)s.append(el("span",{},el("b",{text:fmt(c.plays)}),t.plays));
+    if(c.likes)s.append(el("span",{},el("b",{text:fmt(c.likes)}),t.likes));
+    if(c.published)s.append(el("span",{text:t.posted+c.published}));
+    return el("article",{class:"card"},
+      el("div",{class:"top"},el("span",{class:"num",text:"#"+c.n}),el("div",{},el("h2",{text:zh?c.titleCn:c.titleEn}),el("div",{class:"sub",text:zh?"":c.titleCn}))),
       s,
-      el("a",{class:"watch",href:c.videoUrl,target:"_blank",rel:"noopener",text:"▶ 在抖音看"}),
-      el("div",{class:"idea"},el("div",{class:"label",text:"守望先锋版本"}),el("div",{text:c.idea}))
-    ));
-  });
-}).catch(()=>{document.getElementById("meta").textContent="加载失败，请刷新一下"});
+      el("a",{class:"watch",href:c.videoUrl,target:"_blank",rel:"noopener",text:t.watch}),
+      el("div",{},el("div",{class:"label",text:t.clip}),el("p",{text:zh?c.whatCn:c.whatEn})),
+      el("div",{class:"idea"},el("div",{class:"label",text:t.idea}),el("p",{text:zh?c.ideaCn:c.ideaEn})));
+  }));
+}
+document.querySelectorAll(".lang button").forEach(b=>b.addEventListener("click",()=>{lang=b.dataset.lang;try{localStorage.setItem("lang",lang)}catch(e){}render()}));
+render();
+fetch("clips.json?v="+Date.now()).then(r=>{if(!r.ok)throw 0;return r.json()}).then(d=>{data=d;render()}).catch(()=>{data=false;render()});
 </script>
 </body>
 </html>
